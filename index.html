@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JobCraft – Recherche d'emploi IA</title>
+  <meta name="description" content="Analysez les offres, adaptez votre CV et rédigez vos lettres de motivation grâce à l'IA." />
+  <meta name="theme-color" content="#1E3A5F" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="JobCraft" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --navy: #1E3A5F;
+      --navy-mid: #2D5A8E;
+      --navy-light: #EEF2F9;
+      --bg: #EFF4FB;
+      --bg2: #F8FAFD;
+      --border: #E8EDF5;
+      --text: #1C2B3A;
+      --muted: #64748B;
+      --white: #ffffff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--text); }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #F0F4FA; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+
+    /* HEADER */
+    #app-header {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+      padding: 24px 32px 0;
+      box-shadow: 0 4px 24px rgba(30,58,95,0.2);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .header-top { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+    .app-title { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+    .app-badge { font-size: 12px; background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.9); padding: 2px 10px; border-radius: 20px; font-weight: 500; }
+    .header-sub { font-size: 13px; color: rgba(255,255,255,0.65); margin-bottom: 18px; }
+    .tabs { display: flex; gap: 3px; }
+    .tab-btn {
+      padding: 10px 22px; font-family: 'DM Sans', sans-serif; font-weight: 600;
+      font-size: 13px; cursor: pointer; border: none; border-radius: 10px 10px 0 0;
+      background: transparent; color: rgba(255,255,255,0.7); transition: all 0.2s;
+    }
+    .tab-btn.active { background: var(--white); color: var(--navy); }
+    .tab-count { margin-left: 7px; background: #3B82F6; color: #fff; border-radius: 12px; padding: 1px 7px; font-size: 11px; }
+
+    /* CONTENT */
+    #main-content { max-width: 900px; margin: 0 auto; padding: 28px 24px 60px; }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* CARDS */
+    .card {
+      background: var(--white); border-radius: 16px; border: 1px solid var(--border);
+      box-shadow: 0 2px 12px rgba(30,58,95,0.06); overflow: hidden; margin-bottom: 24px;
+    }
+    .card-head {
+      padding: 13px 20px; border-bottom: 1px solid #F0F4FA;
+      display: flex; align-items: center; gap: 10;
+      background: linear-gradient(135deg, #F8FAFD 0%, var(--navy-light) 100%);
+    }
+    .card-head span { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--navy); font-size: 15px; }
+    .card-body { padding: 18px 20px; }
+
+    /* INPUTS */
+    .field-label { font-size: 12px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 5px; }
+    input[type=text], select, textarea {
+      width: 100%; padding: 9px 12px; border-radius: 9px; border: 1.5px solid #D4DDE9;
+      font-family: 'DM Sans', sans-serif; font-size: 13.5px; color: var(--text);
+      background: var(--white); outline: none; transition: border-color 0.2s;
+    }
+    input[type=text]:focus, select:focus, textarea:focus { border-color: var(--navy); }
+    textarea { font-family: 'Source Serif 4', Georgia, serif; line-height: 1.7; resize: vertical; }
+    textarea.readonly { background: var(--bg2); }
+    .fields-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+
+    /* BUTTONS */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 10px 22px; border-radius: 9px; font-family: 'DM Sans', sans-serif;
+      font-weight: 600; font-size: 14px; cursor: pointer; border: none; transition: all 0.15s;
+    }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-primary { background: linear-gradient(135deg, var(--navy), var(--navy-mid)); color: #fff; }
+    .btn-secondary { background: var(--white); color: var(--navy); border: 1.5px solid var(--navy); }
+    .btn-danger { background: var(--white); color: #EF4444; border: 1.5px solid #EF4444; }
+    .btn-sm { padding: 7px 14px; font-size: 12.5px; }
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+
+    /* ANALYSIS OUTPUT */
+    .analysis-box {
+      background: var(--bg2); border-radius: 10px; padding: 14px 16px;
+      font-family: 'Source Serif 4', Georgia, serif; font-size: 13.5px;
+      line-height: 1.8; color: var(--text); white-space: pre-wrap;
+      max-height: 320px; overflow-y: auto; border: 1px solid var(--border);
+    }
+
+    /* STATS */
+    .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 24px; }
+    .stat-card {
+      background: var(--white); border-radius: 14px; border: 1px solid var(--border);
+      padding: 16px 20px; text-align: center; box-shadow: 0 2px 8px rgba(30,58,95,0.05);
+    }
+    .stat-num { font-size: 28px; font-weight: 800; font-family: 'Playfair Display', serif; }
+    .stat-lbl { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    /* FILTERS */
+    .filter-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .filter-btn {
+      padding: 6px 14px; border-radius: 20px; font-size: 12.5px; font-weight: 600;
+      cursor: pointer; border: 1.5px solid #E2E8F0; background: var(--bg2); color: var(--muted); transition: all 0.15s;
+    }
+    .filter-btn.active { border-color: var(--navy); background: var(--navy-light); color: var(--navy); }
+
+    /* TABLE */
+    .table-wrap { background: var(--white); border-radius: 14px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 2px 8px rgba(30,58,95,0.05); }
+    table { width: 100%; border-collapse: collapse; }
+    th { padding: 12px 14px; text-align: left; font-size: 12px; font-weight: 700; color: var(--muted); background: linear-gradient(135deg,#F8FAFD,var(--navy-light)); border-bottom: 1px solid var(--border); }
+    td { padding: 11px 14px; border-bottom: 1px solid #F0F4FA; font-size: 13px; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: #FAFBFD; }
+
+    /* STATUS SELECT */
+    .status-sel { border-radius: 20px; padding: 4px 10px; font-weight: 700; font-size: 12px; cursor: pointer; outline: none; }
+
+    /* PLATFORM BADGE */
+    .plat-badge { font-size: 11.5px; background: #F0F4FA; color: var(--muted); padding: 3px 9px; border-radius: 12px; }
+
+    /* EMPTY STATE */
+    .empty-state { text-align: center; padding: 48px 0; color: #94A3B8; }
+    .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+    .empty-state .msg { font-size: 14px; }
+    .empty-state .hint { font-size: 13px; margin-top: 6px; }
+
+    /* MODAL */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.55);
+      align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px);
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--white); border-radius: 18px; width: min(820px,95vw);
+      max-height: 88vh; overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(15,23,42,0.25); border: 1px solid var(--border);
+    }
+    .modal-head {
+      padding: 18px 24px; border-bottom: 1px solid #F0F4FA;
+      background: linear-gradient(135deg,#F8FAFD,var(--navy-light));
+      display: flex; justify-content: space-between; align-items: center;
+      border-radius: 18px 18px 0 0; position: sticky; top: 0; z-index: 10;
+    }
+    .modal-title { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 17px; color: var(--navy); }
+    .modal-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: #94A3B8; }
+    .modal-body { padding: 20px 24px; }
+    .modal-section { margin-bottom: 20px; }
+    .modal-section-title { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+
+    /* SPINNER */
+    .spinner-wrap { display: flex; justify-content: center; padding: 2rem; }
+    .spinner { width: 32px; height: 32px; border: 3px solid #E2E8F0; border-top-color: var(--navy); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* INSTALL BANNER */
+    #install-banner {
+      display: none; position: fixed; bottom: 20px; right: 20px;
+      background: var(--navy); color: #fff; border-radius: 14px;
+      padding: 14px 18px; box-shadow: 0 8px 30px rgba(30,58,95,0.35);
+      font-size: 13.5px; max-width: 280px; z-index: 500;
+    }
+    #install-banner.show { display: block; }
+    #install-banner strong { display: block; margin-bottom: 8px; font-size: 14px; }
+    .install-btns { display: flex; gap: 8px; margin-top: 10px; }
+    .install-yes { background: #fff; color: var(--navy); border: none; border-radius: 8px; padding: 7px 14px; font-weight: 700; cursor: pointer; font-size: 13px; }
+    .install-no { background: transparent; color: rgba(255,255,255,0.7); border: none; cursor: pointer; font-size: 13px; }
+
+    /* HINT */
+    .hint-text { font-size: 12px; color: #94A3B8; margin-top: 6px; }
+    .info-text { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 14px; }
+
+    /* SAVE SUCCESS */
+    .save-toast {
+      display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      background: #10B981; color: #fff; border-radius: 10px; padding: 10px 20px;
+      font-weight: 600; font-size: 14px; z-index: 2000; box-shadow: 0 4px 16px rgba(16,185,129,0.4);
+    }
+    .save-toast.show { display: block; animation: fadeInOut 2.5s ease forwards; }
+    @keyframes fadeInOut { 0%{opacity:0;transform:translateX(-50%) translateY(-10px)} 15%{opacity:1;transform:translateX(-50%) translateY(0)} 80%{opacity:1} 100%{opacity:0} }
+
+    @media (max-width: 640px) {
+      .fields-row { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2,1fr); }
+      #app-header { padding: 16px 16px 0; }
+      #main-content { padding: 18px 12px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="save-toast" id="toast">✅ Candidature sauvegardée !</div>
+
+<!-- HEADER -->
+<div id="app-header">
+  <div class="header-top">
+    <span class="app-title">JobCraft</span>
+    <span class="app-badge">Recherche d'emploi augmentée par l'IA</span>
+  </div>
+  <div class="header-sub">Analysez les offres · Adaptez votre CV · Rédigez vos lettres · Suivez vos candidatures</div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab(0)">🔍 Analyser une offre</button>
+    <button class="tab-btn" onclick="switchTab(1)">📄 Mon CV</button>
+    <button class="tab-btn" id="tab2-btn" onclick="switchTab(2)">📊 Candidatures</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main-content">
+
+  <!-- TAB 0: ANALYSER -->
+  <div class="tab-pane active" id="pane-0">
+    <div class="card">
+      <div class="card-head"><span>📋 Informations sur l'offre</span></div>
+      <div class="card-body">
+        <div class="fields-row">
+          <div>
+            <label class="field-label">Intitulé du poste</label>
+            <input type="text" id="job-title" placeholder="ex. Chef de projet digital" />
+          </div>
+          <div>
+            <label class="field-label">Entreprise</label>
+            <input type="text" id="company" placeholder="ex. Société XYZ" />
+          </div>
+          <div>
+            <label class="field-label">Plateforme</label>
+            <select id="platform">
+              <option>LinkedIn</option><option>HelloWork</option><option>Glassdoor</option>
+              <option>Indeed</option><option>Welcome to the Jungle</option><option>Autre</option>
+            </select>
+          </div>
+        </div>
+        <label class="field-label">Texte de l'offre (copiez-collez l'offre complète)</label>
+        <textarea id="offer-text" rows="10" placeholder="Collez ici le texte complet de l'offre d'emploi..."></textarea>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btn-analyse" onclick="analyzeOffer()">🔍 Analyser l'offre</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="spinner-analyse" style="display:none"><div class="spinner-wrap"><div class="spinner"></div></div></div>
+
+    <div class="card" id="card-analysis" style="display:none">
+      <div class="card-head"><span>🎯 Analyse de l'offre</span></div>
+      <div class="card-body">
+        <div class="analysis-box" id="analysis-output"></div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btn-cv" onclick="adaptCV()">✍️ Adapter mon CV</button>
+          <button class="btn btn-primary" id="btn-lettre" onclick="generateLettre()">💌 Générer la lettre de motivation</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="spinner-cv" style="display:none"><div class="spinner-wrap"><div class="spinner"></div></div></div>
+    <div class="card" id="card-cv" style="display:none">
+      <div class="card-head"><span>📄 CV adapté pour ce poste</span></div>
+      <div class="card-body">
+        <textarea id="adapted-cv" rows="16"></textarea>
+        <p class="hint-text">✏️ Vous pouvez modifier le CV adapté ci-dessus avant de sauvegarder.</p>
+      </div>
+    </div>
+
+    <div id="spinner-lettre" style="display:none"><div class="spinner-wrap"><div class="spinner"></div></div></div>
+    <div class="card" id="card-lettre" style="display:none">
+      <div class="card-head"><span>💌 Lettre de motivation</span></div>
+      <div class="card-body">
+        <textarea id="lettre-output" rows="14"></textarea>
+        <p class="hint-text">✏️ Vous pouvez modifier la lettre ci-dessus avant de sauvegarder.</p>
+      </div>
+    </div>
+
+    <div id="save-section" style="display:none; text-align:center; padding: 10px 0 24px;">
+      <button class="btn btn-primary" onclick="saveApplication()">💾 Sauvegarder la candidature</button>
+    </div>
+  </div>
+
+  <!-- TAB 1: CV -->
+  <div class="tab-pane" id="pane-1">
+    <div class="card">
+      <div class="card-head"><span>👤 Mon CV de référence</span></div>
+      <div class="card-body">
+        <p class="info-text">Saisissez votre CV complet ici. Il servira de base pour toutes les adaptations automatiques. Plus votre CV est détaillé, meilleures seront les adaptations.</p>
+        <textarea id="cv-base" rows="22" placeholder="## Expériences professionnelles&#10;&#10;**[Votre poste] – [Entreprise]** | [Dates]&#10;- Décrivez vos responsabilités et accomplissements&#10;- Ajoutez des métriques et résultats concrets&#10;&#10;## Formation&#10;**[Diplôme]** – [École] | [Année]&#10;&#10;## Compétences&#10;[Listez vos compétences]&#10;&#10;## Langues&#10;- Français : Natif&#10;- Anglais : [Niveau]"></textarea>
+        <p class="hint-text">💡 Utilisez le format Markdown pour structurer votre CV (** pour le gras, ## pour les titres, - pour les listes)</p>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="saveCV()">💾 Sauvegarder le CV</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: CANDIDATURES -->
+  <div class="tab-pane" id="pane-2">
+    <div class="stats-grid" id="stats-grid"></div>
+    <div class="filter-row" id="filter-row"></div>
+    <div id="table-container"></div>
+  </div>
+
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="modal-title"></div>
+        <div class="modal-sub" id="modal-sub"></div>
+      </div>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- INSTALL BANNER -->
+<div id="install-banner">
+  <strong>📲 Installer JobCraft</strong>
+  Installez l'application sur votre bureau pour un accès rapide, même hors-ligne.
+  <div class="install-btns">
+    <button class="install-yes" id="install-yes-btn">Installer</button>
+    <button class="install-no" onclick="dismissInstall()">Plus tard</button>
+  </div>
+</div>
+
+<script>
+// ─── API KEY ────────────────────────────────────────────────────────────────
+// Remplacez par votre clé API Anthropic
+const API_KEY = "VOTRE_CLE_API_ANTHROPIC";
+const MODEL   = "claude-sonnet-4-20250514";
+
+// ─── STATE ──────────────────────────────────────────────────────────────────
+let currentAnalysis = "";
+let currentFilter   = "Tous";
+
+const STATUS_OPTIONS = [
+  { label: "À envoyer",   color: "#F59E0B", bg: "#FEF3C7" },
+  { label: "Envoyée",     color: "#3B82F6", bg: "#DBEAFE" },
+  { label: "Relancée",    color: "#8B5CF6", bg: "#EDE9FE" },
+  { label: "Entretien",   color: "#10B981", bg: "#D1FAE5" },
+  { label: "Refusée",     color: "#EF4444", bg: "#FEE2E2" },
+  { label: "Offre reçue", color: "#059669", bg: "#A7F3D0" },
+];
+
+// ─── STORAGE ────────────────────────────────────────────────────────────────
+function loadCandidatures() {
+  try { return JSON.parse(localStorage.getItem("jobcraft_candidatures") || "[]"); } catch { return []; }
+}
+function saveCandidatures(list) {
+  localStorage.setItem("jobcraft_candidatures", JSON.stringify(list));
+}
+function loadCV() {
+  return localStorage.getItem("jobcraft_cv") || "";
+}
+
+// ─── TABS ────────────────────────────────────────────────────────────────────
+function switchTab(i) {
+  document.querySelectorAll(".tab-pane").forEach((p,j) => p.classList.toggle("active", i===j));
+  document.querySelectorAll(".tab-btn").forEach((b,j) => b.classList.toggle("active", i===j));
+  if (i === 2) renderCandidatures();
+}
+
+// ─── TOAST ───────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "save-toast show";
+  setTimeout(() => t.className = "save-toast", 2600);
+}
+
+// ─── CV SAVE ─────────────────────────────────────────────────────────────────
+function saveCV() {
+  localStorage.setItem("jobcraft_cv", document.getElementById("cv-base").value);
+  showToast("✅ CV sauvegardé !");
+}
+
+// ─── CLAUDE API ──────────────────────────────────────────────────────────────
+async function callClaude(userMsg, system="") {
+  const body = { model: MODEL, max_tokens: 1000, messages: [{ role:"user", content: userMsg }] };
+  if (system) body.system = system;
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json", "x-api-key": API_KEY, "anthropic-version":"2023-06-01" }  ,
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return (data.content||[]).map(b=>b.text||"").join("\n");
+}
+
+// ─── ANALYZE ─────────────────────────────────────────────────────────────────
+async function analyzeOffer() {
+  const offer = document.getElementById("offer-text").value.trim();
+  if (!offer) return alert("Veuillez coller le texte de l'offre d'emploi.");
+  setLoading("analyse", true);
+  document.getElementById("card-analysis").style.display = "none";
+  document.getElementById("card-cv").style.display = "none";
+  document.getElementById("card-lettre").style.display = "none";
+  document.getElementById("save-section").style.display = "none";
+  currentAnalysis = "";
+  try {
+    const res = await callClaude(`Analyse cette offre d'emploi et fournis :
+1. **Résumé du poste** (2-3 phrases)
+2. **Compétences clés requises** (liste à puces)
+3. **Soft skills recherchés** (liste à puces)
+4. **Points d'attention** (ce qui différenciera un bon candidat)
+5. **Mots-clés ATS importants** à inclure dans le CV
+
+OFFRE :
+${offer}`);
+    currentAnalysis = res;
+    document.getElementById("analysis-output").textContent = res;
+    document.getElementById("card-analysis").style.display = "block";
+    document.getElementById("save-section").style.display = "block";
+  } catch(e) { alert("Erreur API : " + e.message); }
+  setLoading("analyse", false);
+}
+
+// ─── ADAPT CV ────────────────────────────────────────────────────────────────
+async function adaptCV() {
+  const cv = loadCV() || document.getElementById("cv-base").value;
+  if (!cv.trim()) return alert("Veuillez d'abord renseigner votre CV dans l'onglet \"Mon CV\".");
+  if (!currentAnalysis) return;
+  setLoading("cv", true);
+  try {
+    const res = await callClaude(`Tu es un expert en recrutement. Adapte ce CV pour l'offre d'emploi en reformulant les expériences et compétences pour maximiser la correspondance.
+
+ANALYSE DE L'OFFRE :
+${currentAnalysis}
+
+CV ACTUEL :
+${cv}
+
+Retourne uniquement le CV adapté en markdown, prêt à l'emploi. Garde la structure mais reformule pour mieux correspondre au poste.`);
+    document.getElementById("adapted-cv").value = res;
+    document.getElementById("card-cv").style.display = "block";
+    document.getElementById("card-cv").scrollIntoView({ behavior:"smooth", block:"start" });
+  } catch(e) { alert("Erreur API : " + e.message); }
+  setLoading("cv", false);
+}
+
+// ─── GENERATE LETTRE ─────────────────────────────────────────────────────────
+async function generateLettre() {
+  if (!currentAnalysis) return;
+  const cv = loadCV() || document.getElementById("cv-base").value;
+  const title   = document.getElementById("job-title").value || "le poste";
+  const company = document.getElementById("company").value || "l'entreprise";
+  setLoading("lettre", true);
+  try {
+    const res = await callClaude(`Rédige une lettre de motivation percutante et personnalisée.
+
+POSTE : ${title}
+ENTREPRISE : ${company}
+
+ANALYSE DU POSTE :
+${currentAnalysis}
+
+CV DU CANDIDAT :
+${cv}
+
+La lettre doit :
+- Commencer par une accroche mémorable (pas "Je me permets de...")
+- Montrer la compréhension des enjeux de l'entreprise
+- Mettre en avant 2-3 expériences concrètes en lien direct avec le poste
+- Se terminer par un call-to-action assertif
+- Faire environ 300-350 mots
+- Ton : professionnel mais humain, confiant sans être arrogant`);
+    document.getElementById("lettre-output").value = res;
+    document.getElementById("card-lettre").style.display = "block";
+    document.getElementById("card-lettre").scrollIntoView({ behavior:"smooth", block:"start" });
+  } catch(e) { alert("Erreur API : " + e.message); }
+  setLoading("lettre", false);
+}
+
+function setLoading(type, on) {
+  const ids = { analyse:["btn-analyse","spinner-analyse"], cv:["btn-cv","spinner-cv"], lettre:["btn-lettre","spinner-lettre"] };
+  const [btnId, spinnerId] = ids[type];
+  const btn = document.getElementById(btnId);
+  if (btn) btn.disabled = on;
+  document.getElementById(spinnerId).style.display = on ? "block" : "none";
+}
+
+// ─── SAVE APPLICATION ────────────────────────────────────────────────────────
+function saveApplication() {
+  const list = loadCandidatures();
+  list.unshift({
+    id: Date.now(),
+    date: new Date().toLocaleDateString("fr-FR"),
+    poste: document.getElementById("job-title").value || "Poste non renseigné",
+    entreprise: document.getElementById("company").value || "Entreprise non renseignée",
+    plateforme: document.getElementById("platform").value,
+    statut: "À envoyer",
+    offre: document.getElementById("offer-text").value,
+    analyse: currentAnalysis,
+    cvAdapte: document.getElementById("adapted-cv").value,
+    lettre: document.getElementById("lettre-output").value,
+    notes: ""
+  });
+  saveCandidatures(list);
+  updateTabCount();
+  showToast("✅ Candidature sauvegardée !");
+}
+
+// ─── CANDIDATURES RENDER ─────────────────────────────────────────────────────
+function updateTabCount() {
+  const n = loadCandidatures().length;
+  const btn = document.getElementById("tab2-btn");
+  const existing = btn.querySelector(".tab-count");
+  if (existing) existing.remove();
+  if (n > 0) btn.insertAdjacentHTML("beforeend", `<span class="tab-count">${n}</span>`);
+}
+
+function renderCandidatures() {
+  const all = loadCandidatures();
+  const filtered = currentFilter === "Tous" ? all : all.filter(c => c.statut === currentFilter);
+
+  // Stats
+  const stats = [
+    { label:"Total",      val: all.length,                                                                    color:"#1E3A5F" },
+    { label:"En cours",   val: all.filter(c=>["À envoyer","Envoyée","Relancée"].includes(c.statut)).length,   color:"#3B82F6" },
+    { label:"Entretiens", val: all.filter(c=>c.statut==="Entretien").length,                                  color:"#10B981" },
+    { label:"Offres",     val: all.filter(c=>c.statut==="Offre reçue").length,                                color:"#059669" },
+  ];
+  document.getElementById("stats-grid").innerHTML = stats.map(s => `
+    <div class="stat-card">
+      <div class="stat-num" style="color:${s.color}">${s.val}</div>
+      <div class="stat-lbl">${s.label}</div>
+    </div>`).join("");
+
+  // Filters
+  const filters = ["Tous", ...STATUS_OPTIONS.map(o=>o.label)];
+  document.getElementById("filter-row").innerHTML = filters.map(f => `
+    <button class="filter-btn ${currentFilter===f?"active":""}" onclick="setFilter('${f}')">${f}</button>`).join("");
+
+  // Table
+  const container = document.getElementById("table-container");
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="icon">📭</div>
+      <div class="msg">Aucune candidature ${currentFilter!=="Tous"?`avec le statut "${currentFilter}"`:"enregistrée"}</div>
+      <div class="hint">Analysez une offre dans le premier onglet pour démarrer</div>
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr>
+      <th>Date</th><th>Poste</th><th>Entreprise</th><th>Plateforme</th><th>Statut</th><th>Actions</th>
+    </tr></thead>
+    <tbody>
+      ${filtered.map(c => {
+        const s = STATUS_OPTIONS.find(o=>o.label===c.statut)||STATUS_OPTIONS[0];
+        const opts = STATUS_OPTIONS.map(o=>`<option value="${o.label}"${o.label===c.statut?" selected":""}>${o.label}</option>`).join("");
+        return `<tr>
+          <td style="color:var(--muted);white-space:nowrap;font-size:12.5px">${c.date}</td>
+          <td style="font-weight:600">${c.poste}</td>
+          <td>${c.entreprise}</td>
+          <td><span class="plat-badge">${c.plateforme}</span></td>
+          <td><select class="status-sel" style="background:${s.bg};color:${s.color};border:1.5px solid ${s.color}" onchange="updateStatut(${c.id},this.value)">${opts}</select></td>
+          <td>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-secondary btn-sm" onclick="openDetail(${c.id})">📂 Détails</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteEntry(${c.id})">🗑</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join("")}
+    </tbody>
+  </table></div>`;
+}
+
+function setFilter(f) { currentFilter = f; renderCandidatures(); }
+
+function updateStatut(id, statut) {
+  const list = loadCandidatures();
+  const idx = list.findIndex(c=>c.id===id);
+  if (idx !== -1) { list[idx].statut = statut; saveCandidatures(list); renderCandidatures(); }
+}
+
+function deleteEntry(id) {
+  if (!confirm("Supprimer cette candidature ?")) return;
+  saveCandidatures(loadCandidatures().filter(c=>c.id!==id));
+  updateTabCount(); renderCandidatures();
+}
+
+function openDetail(id) {
+  const c = loadCandidatures().find(c=>c.id===id);
+  if (!c) return;
+  document.getElementById("modal-title").textContent = c.poste;
+  document.getElementById("modal-sub").textContent = `${c.entreprise} · ${c.plateforme} · ${c.date}`;
+  const sections = [
+    { icon:"🎯", label:"Analyse de l'offre", content: c.analyse },
+    { icon:"📄", label:"CV adapté",           content: c.cvAdapte },
+    { icon:"💌", label:"Lettre de motivation", content: c.lettre },
+  ].filter(s=>s.content);
+  document.getElementById("modal-body").innerHTML = sections.map(s=>`
+    <div class="modal-section">
+      <div class="modal-section-title">${s.icon} ${s.label}</div>
+      <div class="analysis-box" style="max-height:200px">${escapeHtml(s.content)}</div>
+    </div>`).join("") + `
+    <div class="modal-section">
+      <div class="modal-section-title">📝 Notes personnelles</div>
+      <textarea id="note-edit" rows="4" placeholder="Contact RH, date entretien, questions à poser...">${escapeHtml(c.notes||"")}</textarea>
+      <div class="btn-row"><button class="btn btn-primary" onclick="saveNote(${id})">💾 Sauvegarder les notes</button></div>
+    </div>`;
+  document.getElementById("modal-overlay").classList.add("open");
+}
+
+function saveNote(id) {
+  const list = loadCandidatures();
+  const idx = list.findIndex(c=>c.id===id);
+  if (idx !== -1) {
+    list[idx].notes = document.getElementById("note-edit").value;
+    saveCandidatures(list);
+    showToast("📝 Notes sauvegardées !");
+  }
+}
+
+function closeModal(e) { if (e.target === document.getElementById("modal-overlay")) closeModalDirect(); }
+function closeModalDirect() { document.getElementById("modal-overlay").classList.remove("open"); }
+function escapeHtml(str) { return (str||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  const saved = loadCV();
+  if (saved) document.getElementById("cv-base").value = saved;
+  updateTabCount();
+});
+
+// ─── PWA INSTALL ─────────────────────────────────────────────────────────────
+let deferredPrompt;
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById("install-banner").classList.add("show");
+});
+document.getElementById("install-yes-btn").addEventListener("click", async () => {
+  document.getElementById("install-banner").classList.remove("show");
+  if (deferredPrompt) { deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; }
+});
+function dismissInstall() {
+  document.getElementById("install-banner").classList.remove("show");
+}
+window.addEventListener("appinstalled", () => { document.getElementById("install-banner").classList.remove("show"); });
+</script>
+
+<!-- SERVICE WORKER -->
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js")
+    .then(() => console.log("✅ Service Worker enregistré"))
+    .catch(e => console.warn("SW error:", e));
+}
+</script>
+</body>
+</html>
