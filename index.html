@@ -340,10 +340,11 @@
 </div>
 
 <script>
-// ─── API KEY ────────────────────────────────────────────────────────────────
-// Remplacez par votre clé API Anthropic
-const API_KEY = "VOTRE_CLE_API_ANTHROPIC";
-const MODEL   = "claude-sonnet-4-20250514";
+// ─── CONFIG ─────────────────────────────────────────────────────────────────
+// La clé API est stockée côté serveur dans les variables d'environnement Netlify
+// Elle n'apparaît jamais dans ce fichier.
+const PROXY_URL = "/.netlify/functions/claude-proxy";
+const MODEL     = "claude-sonnet-4-20250514";
 
 // ─── STATE ──────────────────────────────────────────────────────────────────
 let currentAnalysis = "";
@@ -394,9 +395,9 @@ function saveCV() {
 async function callClaude(userMsg, system="") {
   const body = { model: MODEL, max_tokens: 1000, messages: [{ role:"user", content: userMsg }] };
   if (system) body.system = system;
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json", "x-api-key": API_KEY, "anthropic-version":"2023-06-01" }  ,
+  const res = await fetch(PROXY_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
   });
   const data = await res.json();
