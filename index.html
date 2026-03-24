@@ -264,6 +264,8 @@
         <div class="btn-row">
           <button class="btn btn-primary" id="btn-cv" onclick="adaptCV()">✍️ Adapter mon CV</button>
           <button class="btn btn-primary" id="btn-lettre" onclick="generateLettre()">💌 Générer la lettre de motivation</button>
+          <button class="btn btn-primary" id="btn-approfondie" onclick="analyzeApprofondie()">🔬 Analyse approfondie</button>
+          <button class="btn btn-primary" id="btn-entretien" onclick="prepareEntretien()">🎤 Préparer l'entretien</button>
         </div>
       </div>
     </div>
@@ -283,6 +285,22 @@
       <div class="card-body">
         <textarea id="lettre-output" rows="14"></textarea>
         <p class="hint-text">✏️ Vous pouvez modifier la lettre ci-dessus avant de sauvegarder.</p>
+      </div>
+    </div>
+
+    <div id="spinner-approfondie" style="display:none"><div class="spinner-wrap"><div class="spinner"></div></div></div>
+    <div class="card" id="card-approfondie" style="display:none">
+      <div class="card-head"><span>🔬 Analyse approfondie — Attentes réelles du recruteur</span></div>
+      <div class="card-body">
+        <div class="analysis-box" id="approfondie-output"></div>
+      </div>
+    </div>
+
+    <div id="spinner-entretien" style="display:none"><div class="spinner-wrap"><div class="spinner"></div></div></div>
+    <div class="card" id="card-entretien" style="display:none">
+      <div class="card-head"><span>🎤 Préparation entretien — Questions recruteur</span></div>
+      <div class="card-body">
+        <div class="analysis-box" id="entretien-output"></div>
       </div>
     </div>
 
@@ -490,11 +508,76 @@ La lettre doit :
 }
 
 function setLoading(type, on) {
-  const ids = { analyse:["btn-analyse","spinner-analyse"], cv:["btn-cv","spinner-cv"], lettre:["btn-lettre","spinner-lettre"] };
+  const ids = { analyse:["btn-analyse","spinner-analyse"], cv:["btn-cv","spinner-cv"], lettre:["btn-lettre","spinner-lettre"], approfondie:["btn-approfondie","spinner-approfondie"], entretien:["btn-entretien","spinner-entretien"] };
   const [btnId, spinnerId] = ids[type];
   const btn = document.getElementById(btnId);
   if (btn) btn.disabled = on;
   document.getElementById(spinnerId).style.display = on ? "block" : "none";
+}
+
+// ─── ANALYSE APPROFONDIE ─────────────────────────────────────────────────────
+async function analyzeApprofondie() {
+  const offer = document.getElementById("offer-text").value.trim();
+  if (!currentAnalysis) return alert("Veuillez d'abord lancer l'analyse de l'offre.");
+  setLoading("approfondie", true);
+  document.getElementById("card-approfondie").style.display = "none";
+  try {
+    const res = await callClaude(`Tu es un expert en recrutement senior. Voici une offre d'emploi. Réalise une analyse approfondie structurée en plusieurs parties :
+
+1. **Priorités du poste** — Distingue clairement le cœur de fonction (missions essentielles, non négociables) des responsabilités secondaires ou complémentaires.
+
+2. **Compétences attendues**
+   - Compétences techniques (hard skills, outils, méthodes, environnements de travail mentionnés)
+   - Compétences comportementales (soft skills explicites et implicites)
+   - Compétences managériales ou de leadership si applicables
+
+3. **Enjeux implicites du poste** — Ce que l'offre ne dit pas directement mais laisse entrevoir : contexte de transformation, enjeux organisationnels, tension entre missions, urgences opérationnelles.
+
+4. **Niveau de responsabilité et posture attendue** — Quelle autonomie, quel niveau de décision, quelle posture professionnelle le recruteur recherche-t-il réellement ?
+
+5. **Contexte de la fonction** — Dans quel environnement s'inscrit ce poste (taille d'équipe, position hiérarchique, transversalité, interlocuteurs clés) ?
+
+6. **Ce que le recruteur veut vraiment entendre** — Les 3 messages clés à faire passer absolument en entretien.
+
+OFFRE :
+${offer}`);
+    document.getElementById("approfondie-output").textContent = res;
+    document.getElementById("card-approfondie").style.display = "block";
+    document.getElementById("card-approfondie").scrollIntoView({ behavior:"smooth", block:"start" });
+  } catch(e) { alert("Erreur API : " + e.message); }
+  setLoading("approfondie", false);
+}
+
+// ─── PRÉPARATION ENTRETIEN ────────────────────────────────────────────────────
+async function prepareEntretien() {
+  if (!currentAnalysis) return alert("Veuillez d'abord lancer l'analyse de l'offre.");
+  const cv = loadCV() || document.getElementById("cv-base").value;
+  if (!cv.trim()) return alert("Veuillez d'abord renseigner votre CV dans l'onglet \"Mon CV\".");
+  setLoading("entretien", true);
+  document.getElementById("card-entretien").style.display = "none";
+  const offer = document.getElementById("offer-text").value.trim();
+  try {
+    const res = await callClaude(`Tu es un recruteur senior spécialisé dans les profils IT et management. À partir de l'offre d'emploi et du CV du candidat, formule entre 7 et 10 questions d'entretien réalistes et exigeantes.
+
+Ces questions doivent :
+- Refléter les enjeux réels du poste et les responsabilités clés identifiées dans l'offre
+- Tenir compte du parcours du candidat, de ses points forts et des éléments de son profil qui pourraient nécessiter des éclaircissements
+- Varier les approches : questions de fond, questions comportementales (méthode STAR), questions orientées résultats, questions sur le leadership et la prise de décision
+- Inclure des questions spécifiques au secteur IT telles qu'un recruteur expert pourrait les formuler
+- Être formulées de manière réaliste, directe, comme lors d'un véritable entretien pour un poste à responsabilités
+
+Pour chaque question, indique brièvement entre parenthèses le type de question et ce que le recruteur cherche à évaluer.
+
+OFFRE :
+${offer}
+
+CV DU CANDIDAT :
+${cv}`);
+    document.getElementById("entretien-output").textContent = res;
+    document.getElementById("card-entretien").style.display = "block";
+    document.getElementById("card-entretien").scrollIntoView({ behavior:"smooth", block:"start" });
+  } catch(e) { alert("Erreur API : " + e.message); }
+  setLoading("entretien", false);
 }
 
 // ─── SAVE APPLICATION ────────────────────────────────────────────────────────
@@ -511,6 +594,8 @@ function saveApplication() {
     analyse: currentAnalysis,
     cvAdapte: document.getElementById("adapted-cv").value,
     lettre: document.getElementById("lettre-output").value,
+    analyseApprofondie: document.getElementById("approfondie-output").textContent,
+    questionsEntretien: document.getElementById("entretien-output").textContent,
     notes: ""
   });
   saveCandidatures(list);
@@ -606,9 +691,11 @@ function openDetail(id) {
   document.getElementById("modal-title").textContent = c.poste;
   document.getElementById("modal-sub").textContent = `${c.entreprise} · ${c.plateforme} · ${c.date}`;
   const sections = [
-    { icon:"🎯", label:"Analyse de l'offre", content: c.analyse },
-    { icon:"📄", label:"CV adapté",           content: c.cvAdapte },
-    { icon:"💌", label:"Lettre de motivation", content: c.lettre },
+    { icon:"🎯", label:"Analyse de l'offre",                    content: c.analyse },
+    { icon:"🔬", label:"Analyse approfondie",                   content: c.analyseApprofondie },
+    { icon:"🎤", label:"Questions d'entretien",                 content: c.questionsEntretien },
+    { icon:"📄", label:"CV adapté",                             content: c.cvAdapte },
+    { icon:"💌", label:"Lettre de motivation",                  content: c.lettre },
   ].filter(s=>s.content);
   document.getElementById("modal-body").innerHTML = sections.map(s=>`
     <div class="modal-section">
