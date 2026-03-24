@@ -1,4 +1,4 @@
-const CACHE_NAME = "jobcraft-v1";
+const CACHE_NAME = "jobcraft-v2"; // version incrémentée pour forcer le remplacement
 const ASSETS = [
   "/",
   "/index.html",
@@ -28,43 +28,32 @@ self.addEventListener("activate", event => {
   );
 });
 
-// Fetch: cache-first for static, network-first for API
+// Fetch: ne jamais intercepter les appels dynamiques
 self.addEventListener("fetch", event => {
   const url = new URL(event.request.url);
 
-  // Always fetch Anthropic API from network (never cache AI responses)
-  if (url.hostname === "api.anthropic.com") {
-    event.respondWith(fetch(event.request));
-    return;
+  // ✅ Laisser passer sans interception :
+  // - Appels au proxy Netlify (/.netlify/functions/...)
+  // - Appels directs à Anthropic
+  // - Toutes les requêtes POST (jamais de cache sur les POST)
+  if (
+    url.pathname.startsWith("/.netlify/") ||
+    url.hostname === "api.anthropic.com" ||
+    event.request.method !== "GET"
+  ) {
+    return; // le navigateur gère normalement, sans interception
   }
 
-  // For Google Fonts: stale-while-revalidate
-  if (url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com") {
-    event.respondWith(
-      caches.open(CACHE_NAME).then(cache =>
-        cache.match(event.request).then(cached => {
-          const fresh = fetch(event.request).then(res => {
-            cache.put(event.request, res.clone());
-            return res;
-          });
-          return cached || fresh;
-        })
-      )
-    );
-    return;
-  }
-
-  // Cache-first for all other requests (app shell)
+  // Cache-first pour les assets statiques (GET uniquement)
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
       return fetch(event.request).then(res => {
-        if (res.ok && event.request.method === "GET") {
+        if (res.ok) {
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, res.clone()));
         }
         return res;
       }).catch(() => {
-        // Offline fallback
         if (event.request.destination === "document") {
           return caches.match("/index.html");
         }
