@@ -236,8 +236,7 @@ function updateCVBanner(){
   const text=document.getElementById("cv-banner-text");
   const resetBtn=document.getElementById("btn-reset-cv");
   if(cv){
-    const preview=cv.substring(0,70).replace(/
-/g," ")+"…";
+    const preview=cv.substring(0,70).replace(/\n/g," ")+"…";
     banner.className="cv-banner";
     text.textContent="✅ CV chargé : "+preview;
     resetBtn.style.display="inline-flex";
