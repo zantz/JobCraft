@@ -202,6 +202,7 @@
   <div class="install-btns"><button class="install-yes" id="install-yes-btn">Installer</button><button class="install-no" onclick="dismissInstall()">Plus tard</button></div>
 </div>
 <script>
+// v5
 const PROXY_URL="/.netlify/functions/claude-proxy";
 const MODEL="claude-sonnet-4-20250514";
 let currentFilter="Tous";
@@ -274,14 +275,13 @@ async function callClaude(prompt,maxTokens=4000){
   const res=await fetch(PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:MODEL,max_tokens:maxTokens,messages:[{role:"user",content:prompt}]})});
   const data=await res.json();
   if(data.error)throw new Error(data.error.message);
-  return(data.content||[]).map(b=>b.text||"").join("
-");
+  return(data.content||[]).map(b=>b.text||"").join("");
 }
 async function analyzeAll(){
   const offer=document.getElementById("offer-text").value.trim();
   if(!offer)return alert("Veuillez coller le texte de l'offre d'emploi.");
   const cv=loadCV();
-  if(!cv)return alert("Veuillez d'abord saisir votre CV dans l'onglet "Mon CV".");
+  if(!cv)return alert("Veuillez d'abord saisir votre CV dans l'onglet Mon CV.");
   const title=document.getElementById("job-title").value||"le poste";
   const company=document.getElementById("company").value||"l'entreprise";
   document.getElementById("btn-analyse").disabled=true;
