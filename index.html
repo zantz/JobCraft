@@ -336,7 +336,7 @@ ${offer}
 CV :
 ${cv}`,4000);
     clearInterval(timer);setProgress(5);
-    const parts=result.split(/===SECTION_\d+===/);
+    const parts=result.split(/===SECTION_[12345]===/);
     const s=i=>(parts[i+1]||"").trim();
     document.getElementById("analysis-output").textContent=s(0);
     document.getElementById("approfondie-output").textContent=s(1);

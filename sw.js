@@ -1,4 +1,4 @@
-const CACHE_NAME = "jobcraft-v2"; // version incrémentée pour forcer le remplacement
+const CACHE_NAME = "jobcraft-v3"; // version incrémentée pour forcer le remplacement
 const ASSETS = [
   "/",
   "/index.html",
@@ -50,7 +50,8 @@ self.addEventListener("fetch", event => {
       if (cached) return cached;
       return fetch(event.request).then(res => {
         if (res.ok) {
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, res.clone()));
+          const resClone = res.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, resClone));
         }
         return res;
       }).catch(() => {
