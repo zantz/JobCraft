@@ -26,7 +26,7 @@
     .app-badge{font-size:12px;background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.9);padding:2px 10px;border-radius:20px;font-weight:500;}
     .header-sub{font-size:13px;color:rgba(255,255,255,0.65);margin-bottom:18px;}
     .tabs{display:flex;gap:3px;}
-    .tab-btn{padding:10px 22px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:13px;cursor:pointer;border:none;border-radius:10px 10px 0 0;background:transparent;color:rgba(255,255,255,0.7);transition:all 0.2s;}
+    .tab-btn{padding:10px 22px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:13px;cursor:pointer;border:none;border-radius:10px 10px 0 0;background:transparent;color:rgba(255,255,255,0.9);transition:all 0.2s;pointer-events:auto;user-select:none;}
     .tab-btn.active{background:var(--white);color:var(--navy);}
     .tab-count{margin-left:7px;background:#3B82F6;color:#fff;border-radius:12px;padding:1px 7px;font-size:11px;}
     #main-content{max-width:900px;margin:0 auto;padding:28px 24px 60px;}
@@ -336,7 +336,16 @@ ${offer}
 CV :
 ${cv}`,4000);
     clearInterval(timer);setProgress(5);
-    const parts=result.split(/===SECTION_[12345]===/);
+    const sep1='===SECTION_1===',sep2='===SECTION_2===',sep3='===SECTION_3===',sep4='===SECTION_4===',sep5='===SECTION_5===';
+    const i1=result.indexOf(sep1),i2=result.indexOf(sep2),i3=result.indexOf(sep3),i4=result.indexOf(sep4),i5=result.indexOf(sep5);
+    const parts=[
+      '',
+      i1>=0?result.substring(i1+sep1.length,i2>=0?i2:undefined):'',
+      i2>=0?result.substring(i2+sep2.length,i3>=0?i3:undefined):'',
+      i3>=0?result.substring(i3+sep3.length,i4>=0?i4:undefined):'',
+      i4>=0?result.substring(i4+sep4.length,i5>=0?i5:undefined):'',
+      i5>=0?result.substring(i5+sep5.length):'',
+    ];
     const s=i=>(parts[i+1]||"").trim();
     document.getElementById("analysis-output").textContent=s(0);
     document.getElementById("approfondie-output").textContent=s(1);
